@@ -296,7 +296,111 @@ copy_process()完成的工作
 >
 > 与普通进程的区别在于内核线程没有独立的地址空间。
 >
-> 只在内核空间运行，从不切换到用户空间取。
+> 只在内核空间运行，从不切换到用户空间去。
 >
+> 从kthreadd内核进程中衍生出所有的新的内核线程来实现创建。
+>
+> ```c
+> struct task_struct *kthread_create(int (*threadfn)(void *data),
+>                                    void *data,
+>                                    const char namefmt[],
+>                                    ...)
+> //新任务由kthread通过clone()创建
+> //data为传递的参数，namefmt为进程名
+> ```
+>
+> 新进程处于不可运行状态如果不用wake_up_process()来明确唤醒它，它不会主动运行。
+>
+> 如果想要创建一个进程并且让他运行起来，调用kthread_run()
+>
+> ```c
+> struct task_struct *kthread_run(int (*threadfn)(void *data),
+>                                	void *data,
+>                                 const char namefmt[],
+>                                 ...)
+> //本质等价于kthread_create()+wake_up_process()
+> //通过宏实现
+> #define kthread_run (threadfn,data,namefmt,...)\
+> ({                                              \
+>     struct task_struct *k;           \
+>     k=kthread_create(thradfn,data,namefmt,##__VA_ARGS__);     \
+> 	if(!IS_ERR(k))
+>         wake_up_process(k);      \
+> 	k;               \
+> })     \
+> ```
+>
+> 退出：调用do_exit()或内核的其他部分调用kthread_stop()
+
+#### 进程终结
+
+> 释放资源+通知父进程
+>
+> 主要依靠do_exit(),它所做的工作如下：
+>
+> 1.task_struct中的标志成员设置为PF_EXITING
+>
+> 2.调del_timer_sync().确保没有定时器在排队或运行
+>
+> 3.若记账功能开启，输出记账信息
+>
+> 4.如果地址空间未共享，就释放
+>
+> 5.若进程排队等ipc信号，则离开队列
+>
+> 6.递减文件描述符，文件系统数据的引用计数，若降为0则释放
+>
+> 7.task_struct中的exit_code中的任务退出代码置为exit()提供的退出代码
+>
+> 8.给子进程重新找养父（线程组中的其他线程或者init进程），设置进程状态为EXIT_ZOMBIE
+>
+> 9.do_exit()调用schedule()切换到新进程。
+>
+> 此时进程不可运行且处于EXIT_ZOMBIE退出状态。存在的唯一目的是向它的父进程提供信息。
+>
+> 父进程检索到信息得知为无关信息后，进程的剩余内存被释放
+
+### 删除进程描述符
+
+> do_exit()之后进程不能运行了，但仍保留了进程描述符。这样可以让系统在子进程终结后仍能获得信息。
+>
+> 只有父进程得知该子进程已终结，子进程的task_struct才可释放
+>
+> wait()通过wait4()来实现。挂起调用它的进程，知道其中一个子进程退出，此时函数法返回子进程的pid。
+>
+> 最终释放进程描述符时，release_task()会被调用，完成：
+>
+> 1.从pidhash和任务列表中删除该进程
+>
+> 2.释放资源，进行统计
+>
+> 3。如果是进程组最后一个进程，通知将死的领头进程的父进程
+>
+> 4.释放thread_info结构所占的页，释放task_struct所占的slab高速缓存
+
+孤儿进程
+
+> 父进程执行完成或被终止后仍继续运行的一类进程。会浪费内存。
+>
+> 解决方法：找一个线程做父亲或让init做父亲
+>
+> ```c
+> //do_exit()->exit_notify()->forget_original_parent()->find_new_reaper()
+> //寻父过程
+> static struct task_struct *find_new_reaper(struct tast_struct *father)
+> {
+>     struct pid_namespace *pid_ns =task_activeg_pid_ns(father);
+>     struct task_struct *thread;
+>     thread = father;
+>   //...
+> }
+> ```
+
+
+
+## 进程调度
+
 > 
+
+
 
