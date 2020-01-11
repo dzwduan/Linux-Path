@@ -168,7 +168,7 @@
 > 
 > list_for_each(list,&current->children)
 > {
->     task=list_entry(lilst,struct task_struct,sibling); //task指向当前某子进程
+>  task=list_entry(lilst,struct task_struct,sibling); //task指向当前某子进程
 > }
 > ```
 >
@@ -177,7 +177,7 @@
 > ```c
 > struct task_struct *task;
 > for(task=current;task!=&init_task;task=task->parent)
->     //task最终指向init
+>  //task最终指向init
 > ```
 >
 > 任务队列是双向循环链表，因此方便获取任意指定其他进程。
@@ -199,7 +199,7 @@
 > ```c
 > struct task_struct *task;
 > for_each_process(task){
->     printk("%s[%d]\n",task->comm,task->pid);
+>  printk("%s[%d]\n",task->comm,task->pid);
 > }
 > ```
 >
@@ -228,5 +228,75 @@
 
 ### 进程创建
 
-> l
+> Unix的进程创建分解到两个函数fork()和exec()
+>
+> fork()拷贝当前进程创建一个子进程
+>
+> exec()负责读取可执行文件并将其载入地址空间开始运行
+
+### 写时拷贝
+
+> copy-on-write，不复制整个进程地址空间而是让父进程和子进程共享同一个拷贝。
+>
+> 需要写入才会进行，在此之前都是只读方式共享。
+>
+> 开销：复制父进程的页表+给子进程创建唯一的进程描述符
+
+### fork()
+
+> 通过clone()系统调用实现fork()。
+>
+> fork(),vfork(),__clone()库函数都是调用clone(),再由clone()去调用do_fork()
+>
+> do_fork()完成了创建中的大部分工作，他调用copy_process()然后让进程开始运行
+
+copy_process()完成的工作
+
+> 1.调用dup_task_struct()为新进程创建一个内核栈，thread_info和task_struct,值都与当前进程相同。父子进程描述符相同。
+>
+> 2.检查进程数目是否超过资源限制
+>
+> 3.区别父子进程。进程描述符的许多成员被清0或设为初始值
+>
+> 4.子进程被设置为TASK_UNINTERRUPTIBLE,确保不会投入运行
+>
+> 5.copy_process()调用copy_flags()更新task_struct的flags成员
+>
+> 6.alloc_pid()为新进程分配一个有效PID
+>
+> 7.处理传递给clone()的参数标志
+>
+> 8.copy_process()扫尾工作并返回指向子进程的指针
+
+### vfork()
+
+> 与fork()区别在于vfork()不拷贝父进程页表项。
+>
+> vfork()系统调用的实现是通过向clone()系统调用传递一个特殊标志来实现
+>
+> strace跟踪看一下特殊情况
+
+### 线程在Linux中的实现
+
+> 从内核角度来说，Linux没有线程概念。线程仅仅被视为一个与其他进程共享某些资源的进程。每个线程都拥有唯一隶属于自己的task_struct,在内核中看起来就像是普通进程。他只是一种进程间共享资源的手段，Linux进程本身已经足够轻量级。
+
+### 创建线程  
+
+> clone(CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND,0)
+>
+> 即父子进程共享地址空间|父子进程共享文件系统信息|父子进程共享打开的文件|父子进程共享信号处理函数及被阻断的信号
+>
+> 一个普通的fork()实现:
+>
+> clone(SIGCHLD,0)
+
+### 内核线程
+
+> 独立运行在内核空间的标准进程。
+>
+> 与普通进程的区别在于内核线程没有独立的地址空间。
+>
+> 只在内核空间运行，从不切换到用户空间取。
+>
+> 
 
