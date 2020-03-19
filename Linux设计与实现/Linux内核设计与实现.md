@@ -122,20 +122,28 @@
 > ```
 >
 > 最后通过current_thread_info()->task提取并返回task_struct地址
+>
+> ![image-20200114183115548](C:\Users\10184\AppData\Roaming\Typora\typora-user-images\image-20200114183115548.png)
 
 ### 进程状态
 
-> state域描述了进程当前状态，5种状态
+> TASK_RUNNING:   正在执行 或 已经准备就绪
 >
-> 1.TASK_RUNNING，可执行态，正执行/等待执行
+> TASK_INTERRUPTIBLE： 处于阻塞态， 满足等待条件则唤醒，可由其他进程通过信号或中断唤醒
 >
-> 2.TASK_INTERRUPTIBLE，可中断态，阻塞
+> TASK_UNINTERRUPTIBLE：处于阻塞态， 资源有效则唤醒，不可由其他进程通过信号或中断唤醒
 >
-> 3.TASK_UNINTERRUPTIBLE，不可中断态，接收到信号也不会被唤醒或投入运行，其他同可中断
+> TASK_STOPPED： 终止态，接收到 SIGSTOP和SIGTSTP进入，接收到SIGCONT重回到TASK_RUNNING
 >
-> 4.__TASK_TRACED，被其他进程跟踪的进程
+> TASK_KILLABLE:睡眠态，类似TASK_UNINTERRUPTIBLE,但是可被SIGKILL唤醒
 >
-> 5.__TASK_STOPPED，停止运行，没投入也不能投入运行
+> TASK_TRACED：调试态
+>
+> TASK_DEAD： 调用do_exit时state置为该态
+>
+> EXIT_ZOMBIE:进程执行被终止，但父进程未使用waitpid()来收集信息
+>
+> EXIT_DEAD：进程的最终态，父进程已经使用wait4()或waitpid()收集了信息，系统删除该进程
 
 ### 设置当前进程状态
 
@@ -289,6 +297,8 @@ copy_process()完成的工作
 > 一个普通的fork()实现:
 >
 > clone(SIGCHLD,0)
+>
+> ![image-20200114183408514](C:\Users\10184\AppData\Roaming\Typora\typora-user-images\image-20200114183408514.png)
 
 ### 内核线程
 
@@ -359,6 +369,8 @@ copy_process()完成的工作
 > 此时进程不可运行且处于EXIT_ZOMBIE退出状态。存在的唯一目的是向它的父进程提供信息。
 >
 > 父进程检索到信息得知为无关信息后，进程的剩余内存被释放
+>
+> ![image-20200114183459762](C:\Users\10184\AppData\Roaming\Typora\typora-user-images\image-20200114183459762.png)
 
 ### 删除进程描述符
 
@@ -439,6 +451,18 @@ copy_process()完成的工作
 > 模块化结构，即调度器类。
 >
 > 每个调度器都有一个优先级，按照优先级
+>
+> 封装了调度策略，并且模块化，分为两类。
+>
+> CFS:
+>
+> SCHED_NORMAL, SHCED_BATCH,SCHED_IDLE
+>
+> 实时：
+>
+> SCHED_RR,SCHED_FIFO
+>
+> 其中pick_next_task选择下一个要运行的进程
 
 #### Unix的进程调度
 
@@ -552,6 +576,144 @@ copy_process()完成的工作
 > `实时调度策略` Linux提供了两种实时调度策略：SCHED_FIFO、SCHED_RR。而普通的、非实时的调度策略是SCHED_NORMAL。 实时调度策略不使用CFS来管理，而是被一个特殊的实时调度器管理。 SCHED_FIFO实现了一种简单的先入先出的调度算法，不使用时间片，处于可运行态的SCHED_FIFO进程会比任何SCHED_NORMAL级的进程都先得到调度，一旦一个SCHED_FIFO级进程处于可执行状态，就会一直执行，直到它自己受阻或者显式地释放处理器。 SCHED_RR与SCHED_FIFO大体相同，区别在于SCHED_RR带有时间片，在执行完预先分配的时间后就不能再继续执行了。
 >
 > 
+
+
+
+## Ch5 系统调用
+
+### 定义
+
+> 用户空间和硬件设备的中间层
+>
+> 3个功能：
+>
+> 1.抽象接口
+>
+> 2.确保安全稳定
+>
+> 3.内核的唯一入口
+
+### 调用关系
+
+> Linux的系统调用作为c库的一部分提供
+>
+> ![image-20200114200230846](C:\Users\10184\AppData\Roaming\Typora\typora-user-images\image-20200114200230846.png)
+
+### 操作
+
+> 即访问syscall,通常通过c库中的函数
+
+### 系统调用号
+
+> 进程不会提及系统调用名称而是使用调用号，分配后不能变更。
+>
+> 如果被删除，也不允许回收利用，否则以前的代码会崩溃。
+>
+> sys_ni_syscall()返回-ENOSYS专门针对无效的系统调用
+>
+> sys_call_table记录了系统调用所有已注册的系统调用
+
+### 性能
+
+> 快速
+>
+> 1.上下文切换实际短
+>
+> 2.系统调用处理程序和系统调用自身简洁
+
+### 系统调用处理程序
+
+> system_call()
+>
+> 用户通过软中断通知内核需要执行系统调用。
+>
+> x86中断号为128 ,通过int $0x80指令触发该中断。
+>
+> 新增了sysenter比int中断更快
+
+### 指定恰当的系统调用
+
+> 陷入内核之前将系统调用号放入eax寄存器传递给内核
+>
+> system_call()比较系统调用号和NR_syscalls,大于等于则返回-ENOSYS
+
+### 参数传递
+
+> 通过寄存器，返回也是
+>
+> <img src="C:\Users\10184\AppData\Roaming\Typora\typora-user-images\image-20200114212834170.png" alt="image-20200114212834170" style="zoom:50%;" />
+
+### 实现
+
+> 提供机制而不是策略！
+>
+> 可移植性 健壮性
+
+### 参数验证
+
+> 验证参数是否合法有效
+>
+> 文件： 文件描述符是否有效
+>
+> 进程：PID是否有效
+
+> 最重要的是指针，内核须保证如下：
+>
+> 1.指向的内存区为用户区，不能让内核去读内核区
+>
+> 2.指向进程地址空间，不能读其他进程的空间
+>
+> 3.读，则标为可读，写，则标为可写，执行，则标为可执行，不能绕过
+
+#### 解决方法（指针）
+
+> copy_to_user()
+>
+> copy_from_user()
+
+#### 合法权限检查
+
+> 权能机制，capable()如果返回非0调用者就有权操作
+
+
+
+## Ch6 内核数据结构
+
+### 链表
+
+> Linux是的设计是将链表节点塞入数据结构
+>
+> ```c
+> struct list_head
+> {
+>     struct list_head *next;
+>     struct list_head *prev;
+> }
+> 
+> #define container_of(ptr, type, member) ({	    \
+> 	const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+> 	(type *)( (char *)__mptr - offsetof(type,member) );})
+> //通过结构体变量中某个成员的首地址进而获得整个结构体变量的首地址
+> ```
+>
+
+
+
+## Ch7 中断
+
+过程
+
+> 硬件---->处理器-->os-->处理
+>
+> 硬件生成的中断与处理器时钟不同步。
+>
+> 中断：
+>
+> 每个中断对应唯一的数字标志。但是在pic总线上不一样，动态分配。
+>
+> 异常：
+>
+> 与时序相关，又称为时序中断
 
 
 
