@@ -351,3 +351,306 @@ public:
 ```
 
 重造个新的替换就完事了
+
+
+
+
+
+1290[ 二进制链表转整数](https://leetcode-cn.com/problems/convert-binary-number-in-a-linked-list-to-integer)
+
+![image-20200320151607661](C:\Users\10184\AppData\Roaming\Typora\typora-user-images\image-20200320151607661.png)
+
+```c++
+class Solution {
+public:
+    int getDecimalValue(ListNode* head) {
+        int sum = 0;
+        while(head){
+            sum = sum*2 + head->val;
+            head = head->next;
+        }
+        return sum;
+    }
+};
+```
+
+
+
+## 1266 [访问所有点的最小时间](https://leetcode-cn.com/problems/minimum-time-visiting-all-points) 
+
+![image-20200320153144212](C:\Users\10184\AppData\Roaming\Typora\typora-user-images\image-20200320153144212.png)
+
+本质是每次都走x，y方向中最长的那个方向
+
+```c++
+class Solution {
+public:
+    int minTimeToVisitAllPoints(vector<vector<int>>& points) {
+        int size = points.size();
+        int sum = 0;
+        for(int i=1;i<size;++i){
+            int xpath = abs(points[i][0]-points[i-1][0]);
+            int ypath = abs(points[i][1]-points[i-1][1]);
+            sum += (xpath>ypath)?xpath:ypath;
+        }
+        return sum;
+    }
+};
+```
+
+
+
+## 237 [ 删除链表中的节点](https://leetcode-cn.com/problems/delete-node-in-a-linked-list)
+
+![image-20200320154816689](C:\Users\10184\AppData\Roaming\Typora\typora-user-images\image-20200320154816689.png)
+
+```c++
+class Solution {
+public:
+    void deleteNode(ListNode* node) {
+        node->val = node->next->val;
+        node->next = node->next->next;
+    }
+};
+
+//原地删除法
+```
+
+
+
+## 面试题02.02 [返回倒数第 k 个节点](https://leetcode-cn.com/problems/kth-node-from-end-of-list-lcci) 
+
+![image-20200320155238640](C:\Users\10184\AppData\Roaming\Typora\typora-user-images\image-20200320155238640.png)
+
+双指针法
+
+```c++
+class Solution {
+public:
+    int kthToLast(ListNode* head, int k) {
+            ListNode *  p,*q;
+
+            p=head;
+            q=head;
+            for(int i=0;i<k && p;p=p->next,++i);
+            while(p){
+                p=p->next;
+                q=q->next;
+            }
+            return q->val;
+    }
+};
+```
+
+
+
+## 1351 [统计有序矩阵中的负数](https://leetcode-cn.com/problems/count-negative-numbers-in-a-sorted-matrix) 
+
+![image-20200320160206170](C:\Users\10184\AppData\Roaming\Typora\typora-user-images\image-20200320160206170.png)
+
+这是有序序列，需要充分利用非递增的特性，从右上到左下下梯子
+
+```c++
+class Solution {
+public:
+    int countNegatives(vector<vector<int>>& grid) {
+        int row = grid.size();
+        int col = grid[0].size();
+        int sum=0;
+        int y = col-1;
+        for(auto &p : grid){
+            
+            while(y>=0 && p[y]<0) 
+                y--;
+            sum += (col-y-1);
+        }
+        return sum;
+    }
+};
+```
+
+
+
+
+
+## 365 [水壶问题](https://leetcode-cn.com/problems/water-and-jug-problem) 
+
+![image-20200321185125824](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200321185125824.png)
+
+数学方法：[贝祖定理](https://baike.baidu.com/item/裴蜀定理/5186593?fromtitle=贝祖定理&fromid=5185441)
+
+任意时刻的操作变化的都是x,y，目标就变化为找到a b 使得 ax + by = z有整数解
+
+而上式有解当且仅当z是x y的最大公约数的倍数即贝祖定理。
+
+并且隐含条件是z <=x+y ,如果不满足，那么两个加起来都无法装满
+
+```c++
+class Solution {
+public:
+    bool canMeasureWater(int x, int y, int z) {
+        if(x+y<z || z<0)
+            return false;
+        if(!z)
+            return true;
+        int g;
+        if(x==0 || y==0)
+            g = x+y;
+        else 
+            g = gcd<int>(x,y);
+        return !(z%g);
+    }
+
+    template<typename T>
+    T gcd(T x,T y){
+        if(x%y==0 )
+            return y;
+        else
+            return gcd<T>(y,x%y);
+    }
+};
+```
+
+
+
+## 面试题04.02 [最小高度树](https://leetcode-cn.com/problems/minimum-height-tree-lcci) 
+
+![image-20200321192204502](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200321192204502.png)
+
+构造平衡二叉树
+
+```c++
+class Solution {
+public:
+    TreeNode* sortedArrayToBST(vector<int>& nums) {
+        return buildTree(nums, 0, nums.size()-1);
+    }
+
+    TreeNode* buildTree(const vector<int> &nums,int L,int R){
+        if(L>R || !nums.size())
+            return nullptr;
+        int mid = (L+R)>>1;
+        auto ptr = new TreeNode(nums[mid]);//填充根节点
+        ptr->left = buildTree(nums,L,mid-1);
+        ptr->right = buildTree(nums,mid+1, R);
+        return ptr;
+    }
+};
+```
+
+
+
+## 面试题22 [链表中倒数第k个节点](https://leetcode-cn.com/problems/lian-biao-zhong-dao-shu-di-kge-jie-dian-lcof) 
+
+![image-20200321195900986](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200321195900986.png)
+
+```c++
+class Solution {
+public:
+    ListNode* getKthFromEnd(ListNode* head, int k) {
+        ListNode *p=head,*q=head;
+        while(k--) p = p->next;
+        while(p){
+            p=p->next;
+            q=q->next;
+        }
+        return q;
+    }
+};
+//双指针法之前用过
+```
+
+
+
+##  945 [使数组唯一的最小增量](https://leetcode-cn.com/problems/minimum-increment-to-make-array-unique) 
+
+![image-20200322200305403](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200322200305403.png)
+
+只要确保排序后每个数都比之前的大一
+
+```c++
+class Solution {
+public:
+    int minIncrementForUnique(vector<int>& A) {
+        sort(A.begin(),A.end());
+        int ans=0;
+        for(int i=1;i<A.size();++i){
+            if(A[i-1]>=A[i]){
+                ans +=A[i-1]-A[i]+1;
+                A[i]=A[i-1]+1;
+            }
+        }
+        return ans;
+    }
+};
+```
+
+
+
+## 347[前 K 个高频元素](https://leetcode-cn.com/problems/top-k-frequent-elements/)
+
+![image-20200322190214259](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200322190214259.png)
+
+思路：使用优先级队列。先用hash保存出现频次，再用优先队列处理。
+
+```c++
+class Solution {
+public:
+        struct cmp
+        {
+            bool operator()(pair<int, int>& a, pair<int, int>& b)
+            	{ return a.second > b.second; }
+        };
+
+        vector<int> topKFrequent(vector<int>& nums, int k) {
+        vector<int> ret;
+        map<int, int> hash;
+        for (auto a : nums)
+        {
+            hash[a]++;
+        }
+        priority_queue<pair<int, int>, vector<pair<int, int>>, cmp> freq;//核心
+        for (auto a : hash)
+        {
+            freq.push(a);
+            if (freq.size() > k)
+                freq.pop();
+        }
+        while (!freq.empty())
+        {
+            ret.push_back(freq.top().first);
+            freq.pop();
+        }
+        return ret;
+    }
+};
+
+
+```
+
+
+
+## 面试题17 [打印从1到最大的n位数](https://leetcode-cn.com/problems/da-yin-cong-1dao-zui-da-de-nwei-shu-lcof) 
+
+![image-20200322201516427](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200322201516427.png)
+
+陷阱是大数问题，转为字符数组来做
+
+拓展
+
+大数打印：可以设定一个阈值，例如long的最大值，当超过了这个最大值，将阈值转为字符数组toCharArray()，然后继续+1打印，这样可以提高时间效率，因为一部分的数仍是O(1)打印
+全排列：求从1~pow(10,n)-1实际上可以转化为0-9在n个位置上的全排列
+
+```c++
+class Solution {
+public:
+    vector<int> printNumbers(int n) {
+        int max = pow(10,n)-1;
+        vector<int> ans;
+        for(int i=1;i<=max;++i)
+          ans.push_back(i);
+        return ans;
+    }
+};
+```
+
