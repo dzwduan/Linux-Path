@@ -50,13 +50,15 @@
 
 	org	0x7c00	
 
-BaseOfStack	equ	0x7c00
+org 0x7c00              ;起始地址
 
+BaseofStack equ 0x7c00  ;等价语句 左边==右边，不会分配空间，这里用于为栈寄存器sp提供栈基址
 BaseOfLoader	equ	0x1000
-OffsetOfLoader	equ	0x00
+OffsetOfLoader	equ	0x00   ; baseofloader<<4+offsetloader = 0x10000
 
-RootDirSectors	equ	14
-SectorNumOfRootDirStart	equ	19
+
+RootDirSectors	equ	14  ;占用扇区
+SectorNumOfRootDirStart	equ	19 ;起始扇区
 SectorNumOfFAT1Start	equ	1
 SectorBalance	equ	17	
 
@@ -91,7 +93,7 @@ Label_Start:
 	mov	sp,	BaseOfStack
 
 ;=======	clear screen
-
+;int 10h 的功能号ah=02h实现光标位置
 	mov	ax,	0600h
 	mov	bx,	0700h
 	mov	cx,	0
@@ -100,27 +102,27 @@ Label_Start:
 
 ;=======	set focus
 
-	mov	ax,	0200h
+	mov	ax,	0200h  ;设定光标位置
 	mov	bx,	0000h
 	mov	dx,	0000h
 	int	10h
 
 ;=======	display on screen : Start Booting......
 
-	mov	ax,	1301h
+	mov	ax,	1301h  ;al=01光标移动到字符串尾端
 	mov	bx,	000fh
 	mov	dx,	0000h
-	mov	cx,	10
+	mov	cx,	19
 	push	ax
 	mov	ax,	ds
 	mov	es,	ax
 	pop	ax
-	mov	bp,	StartBootMessage
+	mov	bp,	StartBootMessage  ;es:bp要显示的字符串的内存地址
 	int	10h
 
-;=======	reset floppy
+;=======	reset floppy 复位软盘，相当于将软盘驱动器的磁头移动到默认位置
 
-	xor	ah,	ah
+	xor	ah,	ah    ; int 13h ah=00h 重置磁盘驱动器
 	xor	dl,	dl
 	int	13h
 
@@ -234,10 +236,10 @@ Label_Go_On_Loading_File:
 
 Label_File_Loaded:
 	
-	jmp	BaseOfLoader:OffsetOfLoader
+	jmp	BaseOfLoader:OffsetOfLoader    ;实现段间地址跳转，跳完后目标段赋值给cs
 
 ;=======	read one sector from floppy
-
+;int 13 ah=02h软盘读取
 Func_ReadOneSector:
 	
 	push	bp
@@ -253,7 +255,7 @@ Func_ReadOneSector:
 	shr	al,	1
 	mov	ch,	al
 	and	dh,	1
-	pop	bx
+	pop	bx           ;es:bx目标缓冲区起始地址
 	mov	dl,	[BS_DrvNum]
 Label_Go_On_Reading:
 	mov	ah,	2
@@ -315,7 +317,8 @@ Odd			db	0
 
 ;=======	display messages
 
-StartBootMessage:	db	"Start Boot"
+
+StartMessage: db "Start BootLoader..." ;db 一个字节数据占1个字节单元，读完一个，偏移量加1
 NoLoaderMessage:	db	"ERROR:No LOADER Found"
 LoaderFileName:		db	"LOADER  BIN",0
 

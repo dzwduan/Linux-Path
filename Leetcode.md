@@ -654,3 +654,478 @@ public:
 };
 ```
 
+
+
+## 876[链表的中间结点](https://leetcode-cn.com/problems/middle-of-the-linked-list) 
+
+![image-20200323090141550](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200323090141550.png)
+
+```c++
+public:
+    ListNode* middleNode(ListNode* head) {
+        ListNode *p,*q;
+        p=head;
+        q=head;
+        while(q && q->next){
+            p=p->next;
+            q=q->next->next;
+        }
+        return p;
+    }
+};
+//注意 while的双限制条件
+```
+
+
+
+
+
+## 79 [单词搜索](https://leetcode-cn.com/problems/word-search) 
+
+![image-20200323090517928](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200323090517928.png)
+
+DFS ，每次将搜索过的置为0
+
+```c++
+class Solution {
+public:
+    bool exist(vector<vector<char>>& board, string word) {
+        if(board.size()==0)
+            return false;
+        for(int i=0;i<board.size();++i)
+            for(int j=0;j<board[0].size();++j)
+                if(dfs(board,word,i,j,0))
+                    return true;
+        return false;
+    }
+
+    bool dfs(vector<vector<char>>& board,string &word, int i,int j, int length){
+        if(i>=board.size()||
+           j>=board[0].size()||
+           i<0||
+           j<0||
+           length>=word.size()||
+           word[length]!=board[i][j]
+        )
+        return false;
+
+        if(length==word.size()-1 &&
+           word[length]==board[i][j])
+          return true;
+        
+        char tmp = board[i][j];
+        board[i][j] = '0';
+
+        bool flag= \
+            dfs(board,word,i,j+1,length+1) ||
+            dfs(board,word,i,j-1,length+1) ||
+            dfs(board,word,i+1,j,length+1) ||
+            dfs(board,word,i-1,j,length+1) ;
+        board[i][j] =tmp;
+        return flag;
+
+    }
+};
+```
+
+
+
+## 面试题29 [顺时针打印矩阵](https://leetcode-cn.com/problems/shun-shi-zhen-da-yin-ju-zhen-lcof) 
+
+![image-20200323110307226](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200323110307226.png)
+
+```c++
+class Solution {
+public:
+    vector<int> spiralOrder(vector<vector<int>>& matrix) {
+        if(matrix.size()==0 || matrix[0].size()==0)
+            return {};
+        vector<int> ans;
+        
+        int left=0;
+        int right=matrix[0].size()-1;
+        int top = 0;
+        int bottom = matrix.size()-1;
+
+        while(true){
+            for(int i=left;i<=right;++i)
+                ans.push_back(matrix[top][i]);
+            top++;
+            if(top>bottom)
+                break;
+            
+            for(int i=top;i<=bottom;++i)
+                ans.push_back(matrix[i][right]);
+            right--;
+            if(right<left)
+            break;
+
+            for(int i=right;i>=left;--i)
+                ans.push_back(matrix[bottom][i]);
+            bottom--;
+            if(bottom<top)
+                break;
+            
+            for(int i=bottom;i>=top;--i)
+                ans.push_back(matrix[i][left]);
+            left++;
+            if(left>right)
+                break;
+        }
+
+        return ans;
+        
+    }
+};
+```
+
+
+
+
+
+## 面试题17.16[ 按摩师](https://leetcode-cn.com/problems/the-masseuse-lcci)
+
+![image-20200324185104297](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200324185104297.png)
+
+动态规划
+
+```c++
+class Solution {
+public:
+    int massage(vector<int>& nums) {
+        int n=nums.size();
+        if(!n) return 0;
+        int dp0=0,dp1=nums[0];
+
+        for(int i=1;i<n;++i){
+            int dpi0 = max(dp0,dp1);
+            int dpi1 = dp0+nums[i];
+
+            dp0=dpi0;
+            dp1=dpi1;
+        }
+
+        return max(dp0,dp1);
+    }
+};
+```
+
+
+
+## 面试题10- II [青蛙跳台阶问题](https://leetcode-cn.com/problems/qing-wa-tiao-tai-jie-wen-ti-lcof) 
+
+![image-20200324193530204](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200324193530204.png)
+
+```c++
+class Solution {
+public:
+    int numWays(int n) {
+        vector<int> nums(n+1,1);
+        for(int i=2;i<=n;++i){
+            nums[i] = (nums[i-1]+nums[i-2])%1000000007;
+        }
+        return nums[n];
+    }
+};
+
+//要考虑大数，不能在最后取余
+```
+
+
+
+
+
+## 892 [三维形体的表面积](https://leetcode-cn.com/problems/surface-area-of-3d-shapes)
+
+![image-20200325230204058](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200325230204058.png)
+
+放弃
+
+
+
+
+
+
+
+## 914 [ 卡牌分组](https://leetcode-cn.com/problems/x-of-a-kind-in-a-deck-of-cards) 
+
+![image-20200327115838938](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200327115838938.png)
+
+本质是求最大公约数
+
+```c++
+class Solution {
+public:
+
+    bool hasGroupsSizeX(vector<int>& deck) {
+            int N = deck.size();
+            unordered_map<int,int> hash;
+            for(auto num : deck)
+                hash[num]++;
+            
+            vector<int> values;
+            for(auto &num:hash)
+                if(num.second>0)
+                    values.push_back(num.second);
+
+            for(int i=2;i<=N;++i){
+                if(N % i==0){
+                    bool flag = true;
+
+                    for(int j : values)
+                        if(j %i){
+                            flag = false;
+                            break;
+                        }
+                    
+                    if(flag)
+                        return true;
+
+                }
+            }
+
+        return false;
+    }
+};
+```
+
+
+
+
+
+## 面试题32-2 [ 从上到下打印二叉树 II](https://leetcode-cn.com/problems/cong-shang-dao-xia-da-yin-er-cha-shu-ii-lcof) 
+
+![image-20200327123144050](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200327123144050.png)
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> levelOrder(TreeNode* root) {
+        vector<vector<int>> res;
+        if(!root)
+            return res;
+        queue<TreeNode*> que;
+        que.push(root);
+
+        while(!que.empty()){
+            vector<int> tmp;
+            int qsize = que.size();
+            for(int i=0;i<qsize;++i){
+                TreeNode* t = que.front();
+                tmp.push_back(t->val);
+                que.pop();
+                if(t->left) que.push(t->left);
+                if(t->right) que.push(t->right);
+            }
+            res.push_back(tmp);
+        }
+        return res;
+    }
+};
+
+```
+
+
+
+
+
+## 820 [单词的压缩编码](https://leetcode-cn.com/problems/short-encoding-of-words) 
+
+![image-20200328003018224](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200328003018224.png)
+
+
+
+https://leetcode-cn.com/problems/short-encoding-of-words/solution/wu-xu-zi-dian-shu-qing-qing-yi-fan-zhuan-jie-guo-j/
+
+单词反转+排序，避免了字典树的复杂，反转后当前单词只能是下一个单词的前缀
+
+```c++
+class Solution {
+public:
+    int minimumLengthEncoding(vector<string>& words) {
+        int n = words.size();
+        int sum = 0;
+        vector<string> rev;
+        for(auto word:words){
+            reverse(word.begin(),word.end());
+            rev.push_back(word);
+        }
+
+        sort(rev.begin(),rev.end());
+
+        for(int i=0;i<n;++i){
+            if(i+1 < n && !rev[i+1].find(rev[i]))
+                continue;
+            else
+                sum +=rev[i].size()+1;
+        }
+
+        return sum;
+    }
+};
+```
+
+
+
+## 1162 [地图分析](https://leetcode-cn.com/problems/as-far-from-land-as-possible) 
+
+![image-20200329083513309](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200329083513309.png)
+
+bfs
+
+```c++
+class Solution {
+public:
+
+    const int direction[5]={0,1,0,-1,0};
+
+    int maxDistance(vector<vector<int>>& grid) {
+            int ret = 0;
+            int n=grid.size();
+
+            queue<pair<int,int>> que;
+            
+            for(int i =0;i<n;++i)
+                for(int j=0;j<n;++j)
+                    if(grid[i][j]==1)
+                        que.push({i,j});
+            
+
+            if(que.size()==0 || que.size()==n*n)
+                return -1;
+
+            while(!que.empty()){
+                int s = que.size();
+                int r=0;
+                while(s!=0){
+                    pair<int,int> front = que.front();
+                    que.pop();
+                    for(int i=0;i<4;++i){
+                        int nx = front.first+direction[i];
+                        int ny = front.second+direction[i+1];
+                        if(nx>=n || ny>=n || nx<0 || ny<0 || grid[nx][ny]==1)
+                            continue;
+                        r++;
+                        //填海造陆
+                        grid[nx][ny] = 1;
+                        que.push({nx,ny});
+                    }
+                    s--;
+
+                }
+                if(r>0)
+                    ret++;
+           }
+        return ret;
+    }
+};
+```
+
+
+
+## 面试题62 [圆圈中最后剩下的数字](https://leetcode-cn.com/problems/yuan-quan-zhong-zui-hou-sheng-xia-de-shu-zi-lcof) 
+
+![image-20200330111010065](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200330111010065.png)
+
+约瑟夫环
+
+https://leetcode-cn.com/problems/yuan-quan-zhong-zui-hou-sheng-xia-de-shu-zi-lcof/solution/chi-jing-stsu-degd-degtsu-tu-jie-yue-se-fu-huan-hu/
+
+```c++
+class Solution {
+public:
+    int f(int n, int m) {
+        if (n == 1) {
+            return 0;
+        }
+        return (m + f(n-1, m)) % n; //在不考虑溢出的情况下，(a%d + c)%d == (a+c)%d
+        //return (m%n + f(n-1, m)) % n;
+    }
+    int lastRemaining(int n, int m) {
+        return f(n,m);
+    }
+};
+
+```
+
+
+
+## 912 [排序数组](https://leetcode-cn.com/problems/sort-an-array) 
+
+![image-20200331100745933](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200331100745933.png)
+
+桶排序
+
+```c++
+class Solution {
+public:
+    vector<int> sortArray(vector<int>& nums) {
+        int N = nums.size();
+        vector<int> counter(100001,0);
+        for( int i:nums)
+            counter[i+50000]++;
+        
+        vector<int> ans;
+        for(int i=0;i<100001;++i)
+            if(counter[i])
+                ans.insert(ans.end(),counter[i],i-50000);
+        return ans;
+    }
+};
+```
+
+
+
+## 1111 [ 有效括号的嵌套深度](https://leetcode-cn.com/problems/maximum-nesting-depth-of-two-valid-parentheses-strings) 
+
+![image-20200401101555159](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200401101555159.png)
+
+```c++
+class Solution {
+public:
+    vector<int> maxDepthAfterSplit(string seq) {
+        int d = 0;
+        vector<int> ans;
+        for (char& c : seq)
+            if (c == '(') {
+                ++d;
+                ans.push_back(d % 2);
+            }
+            else {
+                ans.push_back(d % 2);
+                --d;
+            }
+        return ans;
+    }
+};
+
+//题目难理解。。。
+
+```
+
+
+
+## 面试题01.07 [旋转矩阵](https://leetcode-cn.com/problems/rotate-matrix-lcci) 
+
+
+
+![image-20200407015402727](C:\Users\10184\Desktop\Linux-Path\Leetcode.assets\image-20200407015402727.png)
+
+先水平旋转再对角线转
+
+```c++
+class Solution {
+public:
+    void rotate(vector<vector<int>>& matrix) {
+        int n = matrix.size();
+        for(int i=0;i<n/2;++i)
+            for(int j=0;j<n;++j)
+                swap(matrix[i][j],matrix[n-1-i][j]);
+        
+        for(int i=0;i<n;++i)
+            for(int j=0;j<i;++j)
+                swap(matrix[i][j],matrix[j][i]);
+    }
+};
+```
+

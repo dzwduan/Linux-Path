@@ -1,6 +1,14 @@
 org 0x7c00              ;起始地址
 
 BaseofStack equ 0x7c00  ;等价语句 左边==右边，不会分配空间，这里用于为栈寄存器sp提供栈基址
+BaseOfLoader	equ	0x1000
+OffsetOfLoader	equ	0x00   ; baseofloader<<4+offsetloader = 0x10000
+
+
+RootDirSectors	equ	14  ;占用扇区
+SectorNumOfRootDirStart	equ	19 ;起始扇区
+SectorNumOfFAT1Start	equ	1
+SectorBalance	equ	17	
 
 ;初始化
 Label_Start:
@@ -46,6 +54,38 @@ xor ah,ah   ; int 13h ah=00h 重置磁盘驱动器
 xor dl,dl   ; 驱动器号
 int 13h
 jmp $
+
+
+
+;=======	read one sector from floppy
+;int 13 ah=02h软盘读取
+Func_ReadOneSector:
+	
+	push	bp
+	mov	bp,	sp
+	sub	esp,	2
+	mov	byte	[bp - 2],	cl
+	push	bx
+	mov	bl,	[BPB_SecPerTrk]
+	div	bl
+	inc	ah
+	mov	cl,	ah  ;cl读入的扇区数
+	mov	dh,	al
+	shr	al,	1
+	mov	ch,	al
+	and	dh,	1
+	pop	bx      ;es:bx目标缓冲区起始地址
+	mov	dl,	[BS_DrvNum]
+Label_Go_On_Reading:
+	mov	ah,	2
+	mov	al,	byte	[bp - 2]
+	int	13h
+	jc	Label_Go_On_Reading
+	add	esp,	2
+	pop	bp
+	ret
+
+
 
 
 StartMessage: db "Start BootLoader..." ;db 一个字节数据占1个字节单元，读完一个，偏移量加1
